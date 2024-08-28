@@ -3,14 +3,10 @@ from transformers import DataCollatorWithPadding, AutoTokenizer
 from datasets import load_dataset
 
 
-dataset = load_dataset('nyu-mll/multi_nli', split='train', streaming=True)
-dataset = dataset.shuffle(buffer_size=10000)
-
-
 class StreamingDataset(IterableDataset):
     def __init__(self, dataset, tokenizer, infinite=False, buffer_size=1000):
         super().__init__()
-        self.dataset = dataset
+        self.dataset = dataset.filter(lambda example: example['label'] in [0, 1, 2])
         self.tokenizer = tokenizer
         self.infinite = infinite
         self.buffer_size = buffer_size
@@ -47,8 +43,13 @@ class StreamingDataset(IterableDataset):
 
 tokenizer = AutoTokenizer.from_pretrained('microsoft/deberta-v3-base')
 
-prepared_train_dataset = StreamingDataset(dataset, tokenizer, infinite=True)
+train_dataset = load_dataset('nyu-mll/multi_nli', split='train', streaming=True)
+train_dataset = train_dataset.shuffle(buffer_size=10000)
+
+eval_dataset = load_dataset('nyu-mll/multi_nli', split='validation_matched', streaming=True)
+eval_dataset = eval_dataset.shuffle(buffer_size=1000)
+
+train_dataset = StreamingDataset(train_dataset, tokenizer, infinite=True)
+eval_dataset = StreamingDataset(eval_dataset, tokenizer, infinite=False)
 
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-
-train_dataloader = DataLoader(prepared_train_dataset, batch_size=32, collate_fn=data_collator, pin_memory=True)

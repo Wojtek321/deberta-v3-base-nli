@@ -1,11 +1,12 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoConfig, TrainingArguments, Trainer
 import torch
-from data import StreamingDataset, data_collator, prepared_train_dataset
+from data import data_collator, train_dataset, eval_dataset
+from sklearn.metrics import accuracy_score, f1_score
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model_name = 'microsoft/deberta-v3-small'
+model_name = 'microsoft/deberta-v3-base'
 
 id2label = {
     '0': 'entailment',
@@ -27,17 +28,23 @@ config = AutoConfig.from_pretrained(
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name, config=config).to(device)
 
+def eval(pred):
+    labels = pred.label_ids
+    preds = pred.predictions.argmax(-1)
 
+    accuracy = accuracy_score(labels, preds)
+    f1 = f1_score(labels, preds, average='weighted')
 
-batch_size = 2
+    return {"accuracy": accuracy, "f1": f1}
+
 
 
 training_args = TrainingArguments(
-    output_dir="model_checkpoints",
-    max_steps=16,
-    learning_rate=6e-5,
-    per_device_train_batch_size=batch_size,
-    per_device_eval_batch_size=batch_size,
+    output_dir="results",
+    max_steps=30000,
+    learning_rate=3e-4,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
     weight_decay=1e-3,
     evaluation_strategy="steps",
     eval_steps=6000,
@@ -46,7 +53,6 @@ training_args = TrainingArguments(
 
     logging_strategy="steps",
     logging_steps=200,
-    logging_first_step=True,
 
     save_steps=6000,
     save_only_model=True,
@@ -61,7 +67,10 @@ trainer = Trainer(
     tokenizer=tokenizer,
     args=training_args,
     data_collator=data_collator,
-    train_dataset=prepared_train_dataset,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
+    compute_metrics=eval
 )
 
 trainer.train()
+trainer.push_to_hub()
