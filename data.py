@@ -49,7 +49,11 @@ train_dataset = train_dataset.shuffle(buffer_size=10000)
 eval_dataset = load_dataset('nyu-mll/multi_nli', split='validation_matched', streaming=True)
 eval_dataset = eval_dataset.shuffle(buffer_size=1000)
 
+test_dataset = load_dataset('nyu-mll/multi_nli', split='validation_mismatched', streaming=True)
+test_dataset = test_dataset.shuffle(buffer_size=1000)
+
 train_dataset = StreamingDataset(train_dataset, tokenizer, infinite=True)
 eval_dataset = StreamingDataset(eval_dataset, tokenizer, infinite=False)
+test_dataset = StreamingDataset(test_dataset, tokenizer, infinite=False)
 
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)

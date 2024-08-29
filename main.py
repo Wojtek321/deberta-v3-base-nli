@@ -28,7 +28,8 @@ config = AutoConfig.from_pretrained(
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name, config=config).to(device)
 
-def eval(pred):
+
+def compute_metrics(pred):
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
 
@@ -38,9 +39,8 @@ def eval(pred):
     return {"accuracy": accuracy, "f1": f1}
 
 
-
 training_args = TrainingArguments(
-    output_dir="results",
+    output_dir="logs",
     max_steps=30000,
     learning_rate=3e-4,
     per_device_train_batch_size=2,
@@ -58,7 +58,6 @@ training_args = TrainingArguments(
     save_only_model=True,
 
     push_to_hub=False,
-    hub_model_id="deberta-v3-base-nli",
     disable_tqdm=False,
 )
 
@@ -69,8 +68,10 @@ trainer = Trainer(
     data_collator=data_collator,
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
-    compute_metrics=eval
+    compute_metrics=compute_metrics,
 )
 
 trainer.train()
-trainer.push_to_hub()
+
+model.save_pretrained("deberta-v3-base-nli")
+tokenizer.save_pretrained("deberta-v3-base-nli")
