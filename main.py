@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoConfig, TrainingArguments, Trainer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, AutoConfig, TrainingArguments, Trainer, EarlyStoppingCallback
 import torch
 from data import data_collator, train_dataset, eval_dataset
 from sklearn.metrics import accuracy_score, f1_score
@@ -42,23 +42,30 @@ def compute_metrics(pred):
 training_args = TrainingArguments(
     output_dir="logs",
     max_steps=30000,
-    learning_rate=3e-4,
+    learning_rate=1e-5,
     per_device_train_batch_size=2,
     per_device_eval_batch_size=2,
     weight_decay=1e-3,
     evaluation_strategy="steps",
-    eval_steps=6000,
+    eval_steps=5000,
     lr_scheduler_type="cosine",
     warmup_steps=500,
 
     logging_strategy="steps",
     logging_steps=200,
 
-    save_steps=6000,
+    metric_for_best_model='eval_loss',
+
+    save_steps=5000,
     save_only_model=True,
 
     push_to_hub=False,
     disable_tqdm=False,
+)
+
+early_stopping_callback = EarlyStoppingCallback(
+    early_stopping_patience=3,
+    early_stopping_threshold=0.005,
 )
 
 trainer = Trainer(
@@ -69,6 +76,7 @@ trainer = Trainer(
     train_dataset=train_dataset,
     eval_dataset=eval_dataset,
     compute_metrics=compute_metrics,
+    callbacks=[early_stopping_callback],
 )
 
 trainer.train()
