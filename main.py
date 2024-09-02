@@ -41,22 +41,23 @@ def compute_metrics(pred):
 
 training_args = TrainingArguments(
     output_dir="logs",
-    max_steps=30000,
+    max_steps=33000,
     learning_rate=1e-5,
-    per_device_train_batch_size=2,
-    per_device_eval_batch_size=2,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32,
     weight_decay=1e-3,
     evaluation_strategy="steps",
-    eval_steps=5000,
+    eval_steps=3000,
     lr_scheduler_type="cosine",
-    warmup_steps=500,
+    warmup_steps=1000,
 
     logging_strategy="steps",
     logging_steps=200,
 
     metric_for_best_model='eval_loss',
+    load_best_model_at_end=True,
 
-    save_steps=5000,
+    save_steps=3000,
     save_only_model=True,
 
     push_to_hub=False,
