@@ -22,8 +22,8 @@ model_name = "chincyk/deberta-v3-base-nli"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
-premise = "I like playing computer games"
-hypothesis = "Computer games are useless"
+premise = "The flight arrived on time at the airport."
+hypothesis = "The flight was delayed by several hours."
 inputs = tokenizer(premise, hypothesis, return_tensors='pt')
 
 with torch.no_grad():
